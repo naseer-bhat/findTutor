@@ -36,7 +36,11 @@ function StudentRegister() {
       passwordConfirm: formData.passwordConfirm,
     };
     setSpinner(true);
-    axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/student/register`, requestData)
+    axios
+      .post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/student/register`,
+        requestData
+      )
       .then((response) => {
         if (response.data.token) {
           localStorage.setItem("token", response.data.token);

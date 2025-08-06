@@ -18,7 +18,8 @@ function Student() {
       const jwtToken = localStorage.getItem("Student jwtToken");
 
       const response = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL
+        `${
+          import.meta.env.VITE_BACKEND_URL
         }/api/v1/student/appointment/getRegisteredAppointments`,
         {
           headers: {
@@ -122,7 +123,8 @@ function Student() {
     const jwtToken = localStorage.getItem("Student jwtToken");
     await axios
       .patch(
-        `${import.meta.env.VITE_BACKEND_URL
+        `${
+          import.meta.env.VITE_BACKEND_URL
         }/api/v1/student/appointment/${appointmentId}`,
         {
           scheduleAt: scheduleAt,
@@ -198,7 +200,7 @@ function Student() {
                         type="submit"
                         value="Send Message"
                         className="ml-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-                      // onClick={() => setShowModal(false)}
+                        // onClick={() => setShowModal(false)}
                       />
                     </div>
                   </form>
