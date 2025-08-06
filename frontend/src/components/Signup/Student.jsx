@@ -38,7 +38,7 @@ function StudentRegister() {
     setSpinner(true);
     axios
       .post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/student/register`,
+        `${import.meta.env.VITE_BACKEND_URL}api/v1/student/register`,
         requestData
       )
       .then((response) => {
