@@ -32,7 +32,7 @@ router.route('/:id')
   .patch(updateTeacher)
   .delete(deleteTeacher);
 
-router.delete('/rejectStudent/:id', deleteStudent);
+router.delete('/students/:id', deleteStudent);
 router.patch('/approvestudent/:id', approveStudent);
 
 export default router;

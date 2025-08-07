@@ -100,7 +100,7 @@ const Admin = () => {
       setLoading(true);
       const jwtToken = localStorage.getItem("jwtToken");
       await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin/`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/v1/admin`,
         teacherForm,
         { headers: { Authorization: `Bearer ${jwtToken}` } }
       );
