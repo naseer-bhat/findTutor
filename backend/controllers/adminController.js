@@ -1,28 +1,24 @@
-const User = require("../models/User");
-const AppError = require("../utils/AppError");
-const catchAsync = require("../utils/catchAsync");
-const crypto = require("crypto");
-const bcrypt = require("bcrypt");
-const { connect } = require("../utils/sendEmail");
-const transporter = connect();
-const Appointment = require("../models/Appointment");
-const Message = require("../models/Message");
+// Controllers/adminController.js
+import crypto from 'crypto';
+import User from '../models/User.js';
+import Appointment from '../models/Appointment.js';
+import Message from '../models/Message.js';
+import { connect } from '../utils/sendEmail.js';
 
-exports.setRole = function (role) {
-  return (req, res, next) => {
-    req.body.roles = role;
-    next();
-  };
+const transporter = connect();
+
+export const setRole = (role) => (req, res, next) => {
+  req.body.roles = role;
+  next();
 };
 
 const oneTimePasswordCreator = () => {
-  let password = crypto.randomBytes(32).toString("hex");
-  return password;
+  return crypto.randomBytes(32).toString('hex');
 };
 
 const filterObj = (obj) => {
   const newObj = {};
-  const notAllowed = ["email", "roles"];
+  const notAllowed = ['email', 'roles'];
   Object.keys(obj).forEach((el) => {
     if (!notAllowed.includes(el)) {
       newObj[el] = obj[el];
@@ -31,141 +27,126 @@ const filterObj = (obj) => {
   return newObj;
 };
 
-exports.allow = (...roles) => {
-  return (req, res, next) => {
-    if (roles.includes(req.user.role)) {
-      next();
-    } else {
-      next(new AppError("Admin-only access", 401));
-    }
-  };
+export const allow = (...roles) => (req, res, next) => {
+  if (roles.includes(req.user.role)) {
+    next();
+  } else {
+    res.status(401).json({
+      status: 'FAIL',
+      message: 'Admin-only access',
+    });
+  }
 };
 
-exports.createTeacher = catchAsync(async (req, res, next) => {
-  const user = {
-    email: req.body.email,
-    name: req.body.name,
-    department: req.body.department,
-    subject: req.body.subject,
-    age: req.body.age,
-    roles: req.body.roles,
-    password: req.body.password,
-    passwordConfirm: req.body.passwordConfirm,
-  };
+export const createTeacher = async (req, res) => {
+  try {
+    const user = {
+      email: req.body.email,
+      name: req.body.name,
+      department: req.body.department,
+      subject: req.body.subject,
+      age: req.body.age,
+      roles: req.body.roles,
+      password: req.body.password,
+      passwordConfirm: req.body.passwordConfirm,
+    };
 
-  // Check if a user with the same email already exists
-  const existing = await User.findOne({ email: user.email });
-  if (existing) {
-    return res.status(400).json({
-      status: "FAIL",
-      message: "Email already in use",
+    const existing = await User.findOne({ email: user.email });
+    if (existing) {
+      return res.status(400).json({
+        status: 'FAIL',
+        message: 'Email already in use',
+      });
+    }
+
+    const newUser = await User.create(user);
+
+    return res.status(200).json({
+      status: 'SUCCESS',
+      data: { newUser },
     });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
   }
+};
 
-  const newUser = await User.create(user);
+export const getAllTeachers = async (req, res) => {
+  try {
+    const users = await User.find({ roles: 'teacher' }).populate('appointments');
+    res.status(200).json({ status: 'SUCCESS', data: { users } });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-  return res.status(200).json({
-    status: "SUCCESS",
-    data: {
-      newUser,
-    },
-  });
-});
+export const getTeacher = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    res.status(200).json({ status: 'SUCCESS', data: { user } });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-exports.getAllTeachers = catchAsync(async (req, res, next) => {
-  const users = await User.find({ roles: "teacher" }).populate("appointments");
+export const updateTeacher = async (req, res) => {
+  try {
+    const updateObj = filterObj(req.body);
+    const user = await User.findByIdAndUpdate(req.params.id, updateObj, { new: true });
+    res.status(200).json({ status: 'SUCCESS', data: { user } });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-  res.status(200).json({
-    status: "SUCCESS",
-    data: {
-      users,
-    },
-  });
-});
+export const deleteTeacher = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ status: 'FAIL', message: 'User not found' });
+    }
+    await User.findByIdAndDelete(userId);
+    await Appointment.deleteMany({ sendBy: user.email });
+    await Message.deleteMany({ $or: [{ from: user.email }, { to: user.email }] });
 
-exports.getTeacher = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
-
-  res.status(200).json({
-    status: "SUCCESS",
-    data: {
-      user,
-    },
-  });
-});
-
-exports.updateTeacher = catchAsync(async (req, res, next) => {
-  const updateObj = filterObj(req.body);
-  const user = await User.findByIdAndUpdate(req.params.id, updateObj, {
-    new: true,
-  });
-
-  res.status(200).json({
-    status: "SUCCESS",
-    data: {
-      user,
-    },
-  });
-});
-
-exports.deleteTeacher = catchAsync(async (req, res, next) => {
-  const userId = req.params.id;
-
-  // Find the user to get the email or any identifier to delete appointments and messages
-  const user = await User.findById(userId);
-
-  if (!user) {
-    return res.status(404).json({
-      status: "FAIL",
-      message: "User not found",
+    res.status(200).json({
+      status: 'SUCCESS',
+      message: 'User, related appointments, and messages deleted',
     });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
   }
+};
 
-  // Delete the user
-  await User.findByIdAndDelete(userId);
+export const approveStudent = async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.params.id, { admissionStatus: true });
+    const studentEmail = await User.findById(req.params.id).select('email');
 
-  // Delete appointments associated with the user
-  await Appointment.deleteMany({ sendBy: user.email });
+    await transporter.sendMail({
+      from: 'tutor-time@brevo.com',
+      to: studentEmail.email,
+      subject: 'Appointment Accepted',
+      html: `
+        <h2>Congratulations!</h2>
+        <p>Your account has been approved on TUTOR-TIME.</p>
+        <p>You can now access all the features and resources available to students.</p>
+        <p>Best regards,</p>
+        <p>From TUTOR-TIME</p>
+      `,
+    });
 
-  // Delete messages associated with the user
-  await Message.deleteMany({ $or: [{ from: user.email }, { to: user.email }] });
+    res.status(200).json({ message: 'Student Approved' });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-  res.status(200).json({
-    status: "SUCCESS",
-    message: "User, related appointments, and messages deleted",
-  });
-});
-
-exports.approveStudent = catchAsync(async (req, res, next) => {
-  await User.findByIdAndUpdate(
-    req.params.id,
-    { admissionStatus: true },
-    { where: { roles: "student" } }
-  );
-  const studentEmail = await User.findById(req.params.id).select("email");
-  // console.log("studentmail", studentEmail.email)
-  let info = await transporter.sendMail({
-    from: '"tutor-time@brevo.com',
-    to: studentEmail.email,
-    subject: "Appointment Accepted",
-    html: `
-    <h2>Congratulations!</h2>
-    <p>Your account has been approved on TUTOR-TIME.</p>
-    <p>You can now access all the features and resources available to students.</p>
-    <p>Best regards,</p>
-    <p>From TUTOR-TIME</p>
-    `,
-  });
-  res.status(200).json({
-    message: "Student Approved",
-  });
-});
-
-exports.deleteStudent = catchAsync(async (req, res, next) => {
-  await User.findByIdAndDelete(req.params.id);
-
-  res.status(200).json({
-    status: "SUCCESS",
-    message: "Student deleted",
-  });
-});
+export const deleteStudent = async (req, res) => {
+  try {
+    await User.findByIdAndDelete(req.params.id);
+    res.status(200).json({ status: 'SUCCESS', message: 'Student deleted' });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};

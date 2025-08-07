@@ -1,20 +1,30 @@
-const express = require('express');
-const { login, verifyToken } = require('../controllers/authController');
-const { register, bookAppointment, getTeacherWithAppointments, registeredAppointments } = require('../controllers/studentController');
-const { allow } = require('../controllers/adminController');
+// routes/studentRoutes.js
+import express from 'express';
+import {
+  register,
+  bookAppointment,
+  getTeacherWithAppointments,
+  registeredAppointments
+} from '../controllers/studentController.js';
+import { login } from '../controllers/authController.js';
+import { allow } from '../middlewares/roleMiddleware.js';
+import verifyToken from '../middlewares/verifyToken.js';
+
 const router = express.Router();
 
 router.get('/get', (req, res) => {
-    res.send("Welcome to the student Tutor-Time API!")
-})
-router.route('/post').post((req, res) => {
-    res.send("Welcome to the student Tutor-Time API!")
-})
-router.route('/register').post(register);
-router.route('/login').post(login)
-router.route('/appointment/:id').patch(verifyToken, allow('student'), bookAppointment)
-router.route('/appointment/getTeachersWithAppointments').get(verifyToken, allow('student'), getTeacherWithAppointments)
-router.route('/appointment/getRegisteredAppointments').get(verifyToken, allow('student'), registeredAppointments)
+  res.send('Welcome to the student Tutor-Time API!');
+});
 
+router.post('/post', (req, res) => {
+  res.send('Welcome to the student Tutor-Time API!');
+});
 
-module.exports = router
+router.post('/register', register);
+router.post('/login', login);
+
+router.patch('/appointment/:id', verifyToken, allow('student'), bookAppointment);
+router.get('/appointment/getTeachersWithAppointments', verifyToken, allow('student'), getTeacherWithAppointments);
+router.get('/appointment/getRegisteredAppointments', verifyToken, allow('student'), registeredAppointments);
+
+export default router;

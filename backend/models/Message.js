@@ -1,20 +1,25 @@
-const mongoose = require('mongoose')
+// models/Message.js
+import mongoose from 'mongoose';
 
-const messageSchema = new mongoose.Schema({
-    from:{
-        type:String,
-        required:true
+const messageSchema = new mongoose.Schema(
+  {
+    from: {
+      type: String,
+      required: [true, 'Sender email is required'],
     },
-    to:{
-        type:String,
-        required:true
+    to: {
+      type: String,
+      required: [true, 'Receiver email is required'],
     },
-    messageText:{
-        type:String,
-        required:true
-    }
-})
+    content: {
+      type: String,
+      required: [true, 'Message content is required'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
 
-const Message = mongoose.model('Message',messageSchema)
-
-module.exports = Message
+const Message = mongoose.model('Message', messageSchema);
+export default Message;

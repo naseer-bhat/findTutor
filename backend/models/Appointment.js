@@ -1,51 +1,36 @@
-const mongoose = require('mongoose')
+// models/Appointment.js
+import mongoose from "mongoose";
 
-
-const appointmentSchema = new mongoose.Schema({
-
+const appointmentSchema = new mongoose.Schema(
+  {
     sendBy: {
-        type: String,
-        required: true
+      type: String,
+      required: [true, "Sender email is required"],
     },
-    name:{
-        type:String,
-        required:true
+    sendTo: {
+      type: String,
+      required: [true, "Receiver email is required"],
     },
-
-    scheduleAt: {
-        type: Date,
-        required: true,
+    title: {
+      type: String,
+      required: [true, "Appointment title is required"],
     },
-    students: [
-        {
-            studentId: {
-                type: mongoose.Schema.ObjectId,
-                
-                ref: "User"
-
-            },
-            approved: {
-                type: Boolean,
-                default: false
-            }
-        }
-    ]
-
-
-
-
-
-})
-
-appointmentSchema.index({ sendBy: 1, scheduleAt: 1 }, { unique: true });
-appointmentSchema.index(
-    { "students.studentId": 1 },
-    { partialFilterExpression: { "students.studentId": null }, unique: true }
+    description: {
+      type: String,
+    },
+    date: {
+      type: Date,
+      required: [true, "Appointment date is required"],
+    },
+    time: {
+      type: String,
+      required: [true, "Appointment time is required"],
+    },
+  },
+  {
+    timestamps: true,
+  }
 );
 
-
-
-
-
-module.exports = mongoose.model('Appointment', appointmentSchema)
-
+const Appointment = mongoose.model("Appointment", appointmentSchema);
+export default Appointment;

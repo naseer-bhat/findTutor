@@ -1,10 +1,20 @@
-const express = require('express');
-const { getAllMessages, sendMessage } = require('../controllers/messageController');
-const { verifyToken } = require('../controllers/authController');
-const { allow } = require('../controllers/adminController');
+import express from "express";
+import {
+  sendMessage,
+  getSentMessages,
+  deleteMessage,
+} from "../controllers/messageController.js";
+import verifyToken from "../middlewares/verifyToken.js";
+
 const router = express.Router();
 
-router.route('/').get(verifyToken, allow('teacher'), getAllMessages).post(verifyToken, allow('student'), sendMessage);
+// Get all messages for the logged-in user
+router.get("/", verifyToken, getSentMessages);
 
+// Create a new message
+router.post("/", verifyToken, sendMessage);
 
-module.exports = router;
+// Delete a message by ID
+router.delete("/:id", verifyToken, deleteMessage);
+
+export default router;

@@ -1,141 +1,144 @@
+import User from '../models/User.js';
+import Appointment from '../models/Appointment.js';
 
-const User = require("../models/User");
-const Appointment = require("../models/Appointment");
-const AppError = require("../utils/AppError");
-const catchAsync = require("../utils/catchAsync");
-const { connect } = require('../utils/sendEmail');
-const transporter = connect()
-
-// Helper function to check if two appointment times clash
-const checkTimeClash = (time1, time2) => {
-    const timeDiff = Math.abs(new Date(time1) - new Date(time2));
-    return timeDiff <= 7200000; // 120 minutes in milliseconds
+// GET /api/v1/teachers/
+export const getAllStudents = async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student' });
+    res.status(200).json({ status: 'SUCCESS', data: { students } });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
 };
 
-// Helper function to retrieve appointments for a user within a specific date range
-const getUserAppointments = async (email, startDate, endDate) => {
-    return await Appointment.find({
-        sendBy: email,
+// POST /api/v1/teachers/schedule
+export const createAppointment = async (req, res) => {
+  try {
+    const { date, time, subject, description, sendTo } = req.body;
 
-        scheduleAt: { $gte: startDate, $lt: endDate }
+    const appointment = await Appointment.create({
+      date,
+      time,
+      subject,
+      description,
+      sendBy: req.user.email,
+      sendTo,
+      teacher: req.user._id,
     });
+
+    res.status(201).json({
+      status: 'SUCCESS',
+      data: { appointment },
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'FAIL',
+      message: err.message,
+    });
+  }
 };
 
-exports.getAllPendingStudents = catchAsync(async (req, res, next) => {
-    const students = await Appointment.find({ sendBy: req.user.email, "students.approved": false }).populate({ path: "students.studentId", select: "_id name department email" }).select("-students.approved -students._id -sendBy");
+// GET /api/v1/teachers/schedule
+export const getAllAppointments = async (req, res) => {
+  try {
+    const filter = req.user.role === 'teacher'
+      ? { teacher: req.user._id }
+      : {};
+    const appointments = await Appointment.find(filter);
 
     res.status(200).json({
-        status: "Success",
-        students
-    })
-})
+      status: 'SUCCESS',
+      data: { appointments },
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-exports.getAllAppointments = catchAsync(async (req, res) => {
-    const appointments = await Appointment.find({ sendBy: req.user.email });
-    res.status(200).json({ appointments });
-});
+// DELETE /api/v1/teachers/reschedule/:id
+export const deleteAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findByIdAndDelete(req.params.id);
 
+    if (!appointment) {
+      return res.status(404).json({
+        status: 'FAIL',
+        message: 'Appointment not found',
+      });
+    }
 
-
-
-exports.createAppointment = catchAsync(async (req, res, next) => {
-
-    const sendBy = req.user.email;
-    const name = req.user.name;
-    //const scheduleAt = new Date(2022, 10, 10, 14, 0, 0).toString(); // Replace with your desired date/time
-
-    const scheduleAt = req.body.scheduleAt;
-
-
-    const newAppointment = await Appointment.create({ sendBy, name, scheduleAt })
-    await User.findOneAndUpdate({ _id: req.user.id }, { $push: { appointments: newAppointment._id } })
     res.status(200).json({
-        newAppointment
-    })
-
-});
-
-exports.approveAppointment = catchAsync(async (req, res) => {
-    const appointment = await Appointment.findOneAndUpdate({ _id: req.params.id, "students.studentId": req.params.studentId }, {
-        $set: {
-            'students.$.approved': true // Set the 'approved' field to true for the matched student
-        }
+      status: 'SUCCESS',
+      message: 'Appointment deleted',
     });
-    // const studentEmail = await User.findById(req.params.studentId).select('email')
-    // console.log(studentEmail)
-    // const message = "your appointment is approved"
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-    // let info = await transporter.sendMail({from:req.user.email,to:studentEmail.email,subject:"Book appointment",body:message})
+// PATCH /api/v1/teachers/changeApprovalStatus/:id/:studentId
+export const approveAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      { approved: true },
+      { new: true }
+    );
 
-    const studentEmail = await User.findById(req.params.studentId).select('email');
-    console.log(studentEmail)
-    let info = await transporter.sendMail({
-        from: '"tutor-time@brevo.com',
-        to: studentEmail.email,
-        subject: "Appointment Accepted",
-        html: `
-            <h2>Dear Student,</h2>
-            <p>We are pleased to inform you that your appointment request has been successfully accepted by the teacher.</p>
-            <p>Please make sure to join the session on time. If you have any questions or concerns, feel free to contact us.</p>
-            <p>Thank you for using Tutor-Time, and we hope you have a productive session!</p>
-            <p>Best regards,</p>
-            <p>Tutor-Time</p>
-            <p>Visit our website</p>
+    if (!appointment) {
+      return res.status(404).json({
+        status: 'FAIL',
+        message: 'Appointment not found',
+      });
+    }
 
-    `,
+    res.status(200).json({
+      status: 'SUCCESS',
+      data: { appointment },
     });
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
+// DELETE /api/v1/teachers/changeApprovalStatus/:id/:studentId
+export const dissapproveAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findByIdAndUpdate(
+      req.params.id,
+      { approved: false },
+      { new: true }
+    );
 
+    if (!appointment) {
+      return res.status(404).json({
+        status: 'FAIL',
+        message: 'Appointment not found',
+      });
+    }
 
-
-
-
-
-    res.status(200).json({ message: "Approved" });
-});
-
-exports.dissapproveAppointment = catchAsync(async (req, res) => {
-    const appointment = await Appointment.findOneAndUpdate({ _id: req.params.id }, {
-        $pull: {
-            'students': { 'studentId': req.params.studentId }
-        }
+    res.status(200).json({
+      status: 'SUCCESS',
+      data: { appointment },
     });
-    // const studentEmail = await User.findById(req.params.studentId).select('email')
-    // console.log(studentEmail)
-    // const message = "Your appointment is not approved"
-    // let info = await transporter.sendMail({from:req.user.email,to:studentEmail.email,subject:"Book appointment",body:message})
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
 
-    const studentEmail = await User.findById(req.params.studentId).select('email');
-    console.log(studentEmail)
-    let info = await transporter.sendMail({
-        from: "abutalhasheikh33@gmail.com",
-        to: studentEmail.email,
-        subject: "Appointment Rejected",
-        html: `
-        <h2>Dear Student,</h2>
-        <p>We regret to inform you that your appointment request has been rejected by the teacher.</p>
-        <p>If you have any questions or concerns, please reach out to us for further assistance.</p>
-        <p>Thank you for using Tutor-Time, and we hope you understand the situation.</p>
-        <p>Best regards,</p>
-        <p>Tutor-Time</p>
-        <p>Visit our website</p>
+// GET /api/v1/teachers/getAllPendingStudents
+export const getAllPendingStudents = async (req, res) => {
+  try {
+    const pendingAppointments = await Appointment.find({
+      approved: false,
+      teacher: req.user._id,
+    }).populate('student');
 
-    `,
+    res.status(200).json({
+      status: 'SUCCESS',
+      data: { pendingAppointments },
     });
-
-    res.status(200).json({ message: "Student rejected" });
-});
-
-exports.deleteAppointment = catchAsync(async (req, res) => {
-    await Appointment.findByIdAndDelete(req.params.id);
-    await User.findByIdAndUpdate(req.user.id, { $pull: { 'appointments': req.params.id } })
-    const message = `Appointment has been cancelled`;
-    //await sendEmail(appointment.sendBy, req.body.mail, "Appointment Booking", message);
-    res.status(200).json({ status: "SUCCESS", message: "Appointment deleted" });
-});
-
-exports.getAllStudents = catchAsync(async (req, res) => {
-    const filter = { roles: "student", ...req.query };
-    const students = await User.find(filter).collation({ locale: 'en', strength: 2 });
-    res.status(200).json({ students });
-});
+  } catch (err) {
+    res.status(500).json({ status: 'FAIL', message: err.message });
+  }
+};
