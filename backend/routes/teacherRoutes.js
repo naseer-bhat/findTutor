@@ -2,27 +2,27 @@ import express from "express";
 import verifyToken from "../middlewares/verifyToken.js";
 import { allow } from "../middlewares/roleMiddleware.js";
 import {
+  getAllAppointments,
   createAppointment,
   deleteAppointment,
-  getAllAppointments,
-  getAllStudents,
   approveAppointment,
   dissapproveAppointment,
-  getAllPendingStudents,
 } from "../controllers/teacherController.js";
 import { login, updatePassword } from "../controllers/authController.js";
 
 const router = express.Router();
 
-router.get("/", getAllStudents);
+// Authentication
 router.post("/login", login);
 router.patch("/updatePassword", verifyToken, updatePassword);
 
+// Manage teacher's appointments
 router
   .route("/schedule")
-  .get(verifyToken, allow("admin", "teacher"), getAllAppointments)
-  .post(verifyToken, allow("admin", "teacher"), createAppointment);
+  .get(verifyToken, allow("teacher"), getAllAppointments)
+  .post(verifyToken, allow("teacher"), createAppointment);
 
+// Delete an appointment
 router.delete(
   "/reschedule/:id",
   verifyToken,
@@ -30,16 +30,10 @@ router.delete(
   deleteAppointment
 );
 
+// Approve/disapprove a student's specific appointment request (NOT student admission!)
 router
   .route("/changeApprovalStatus/:id/:studentId")
-  .patch(verifyToken, allow("admin", "teacher"), approveAppointment)
-  .delete(verifyToken, allow("admin", "teacher"), dissapproveAppointment);
-
-router.get(
-  "/getAllPendingStudents",
-  verifyToken,
-  allow("teacher"),
-  getAllPendingStudents
-);
+  .patch(verifyToken, allow("teacher"), approveAppointment)
+  .delete(verifyToken, allow("teacher"), dissapproveAppointment);
 
 export default router;
