@@ -23,7 +23,9 @@ const Admin = () => {
         );
 
         const studentsRes = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/teacher/getAllPendingStudents`,
+          `${
+            import.meta.env.VITE_BACKEND_URL
+          }/api/v1/teacher/getAllPendingStudents`,
           {
             headers: { Authorization: `Bearer ${jwtToken}` },
           }
@@ -66,7 +68,9 @@ const Admin = () => {
                       ? teacher.subject.join(", ")
                       : teacher.subject || "N/A"}
                   </td>
-                  <td className="py-2 px-4 border">{teacher.gender || "N/A"}</td>
+                  <td className="py-2 px-4 border">
+                    {teacher.gender || "N/A"}
+                  </td>
                   <td className="py-2 px-4 border">
                     {teacher.experience || "N/A"}
                   </td>
@@ -81,15 +85,24 @@ const Admin = () => {
         {Array.isArray(teachers) &&
           teachers.map((teacher) => (
             <div key={teacher._id} className="border p-2 mb-2 rounded">
-              <p><strong>Name:</strong> {teacher.name || "N/A"}</p>
-              <p><strong>Email:</strong> {teacher.email || "N/A"}</p>
-              <p><strong>Subject:</strong>{" "}
+              <p>
+                <strong>Name:</strong> {teacher.name || "N/A"}
+              </p>
+              <p>
+                <strong>Email:</strong> {teacher.email || "N/A"}
+              </p>
+              <p>
+                <strong>Subject:</strong>{" "}
                 {Array.isArray(teacher.subject)
                   ? teacher.subject.join(", ")
                   : teacher.subject || "N/A"}
               </p>
-              <p><strong>Gender:</strong> {teacher.gender || "N/A"}</p>
-              <p><strong>Experience:</strong> {teacher.experience || "N/A"}</p>
+              <p>
+                <strong>Gender:</strong> {teacher.gender || "N/A"}
+              </p>
+              <p>
+                <strong>Experience:</strong> {teacher.experience || "N/A"}
+              </p>
             </div>
           ))}
       </div>
@@ -99,12 +112,23 @@ const Admin = () => {
         {Array.isArray(students) &&
           students.map((student) => (
             <div key={student._id} className="border p-4 rounded shadow">
-              <p><strong>Name:</strong> {student.name || "N/A"}</p>
-              <p><strong>Email:</strong> {student.email || "N/A"}</p>
-              <p><strong>Phone:</strong> {student.phone || "N/A"}</p>
-              <p><strong>Address:</strong> {student.address || "N/A"}</p>
-              <p><strong>Gender:</strong> {student.gender || "N/A"}</p>
-              <p><strong>Roles:</strong>{" "}
+              <p>
+                <strong>Name:</strong> {student.name || "N/A"}
+              </p>
+              <p>
+                <strong>Email:</strong> {student.email || "N/A"}
+              </p>
+              <p>
+                <strong>Phone:</strong> {student.phone || "N/A"}
+              </p>
+              <p>
+                <strong>Address:</strong> {student.address || "N/A"}
+              </p>
+              <p>
+                <strong>Gender:</strong> {student.gender || "N/A"}
+              </p>
+              <p>
+                <strong>Roles:</strong>{" "}
                 {Array.isArray(student.roles)
                   ? student.roles.join(", ")
                   : student.roles || "N/A"}
